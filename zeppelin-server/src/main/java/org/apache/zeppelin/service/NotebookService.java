@@ -1188,6 +1188,7 @@ public class NotebookService {
       note -> {
         if (note == null) {
           callback.onFailure(new NoteNotFoundException(noteId), context);
+          return null;
         }
         try {
           Map<String, Object> settings = notebook.getInterpreterSettingManager().

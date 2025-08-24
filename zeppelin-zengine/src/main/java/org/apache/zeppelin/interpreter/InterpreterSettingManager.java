@@ -560,6 +560,9 @@ public class InterpreterSettingManager implements NoteEventListener {
     try {
       InterpreterSetting interpreterSetting = notebook.processNote(noteId,
         note -> {
+          if (note == null) {
+            return null;
+          }
           return interpreterSettings.get(note.getDefaultInterpreterGroup());
         });
       if (interpreterSetting == null) {

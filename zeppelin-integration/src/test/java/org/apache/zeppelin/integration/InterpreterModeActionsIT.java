@@ -87,7 +87,9 @@ public class InterpreterModeActionsIT extends AbstractZeppelinIT {
 
   @AfterEach
   public void tearDownManager() throws IOException {
-    manager.close();
+    if (manager != null) {
+      manager.close();
+    }
   }
 
   @AfterAll

@@ -83,6 +83,14 @@ public class WebDriverManager implements Closeable {
     Supplier<WebDriver> chromeDriverSupplier = () -> {
       try {
         ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--window-size=1600,1024");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--disable-web-security");
+        options.addArguments("--allow-running-insecure-content");
         return new ChromeDriver(options);
       } catch (Exception e) {
         LOG.error("Exception in WebDriverManager while ChromeDriver ", e);
@@ -136,10 +144,10 @@ public class WebDriverManager implements Closeable {
       .implicitlyWait(Duration.ofSeconds(AbstractZeppelinIT.MAX_IMPLICIT_WAIT));
     driver.get(url);
 
-    while (System.currentTimeMillis() - start < 60 * 1000) {
+    while (System.currentTimeMillis() - start < 120 * 1000) {
       // wait for page load
       try {
-        (new WebDriverWait(driver, Duration.ofSeconds(60))).until(new ExpectedCondition<Boolean>() {
+        (new WebDriverWait(driver, Duration.ofSeconds(90))).until(new ExpectedCondition<Boolean>() {
           @Override
           public Boolean apply(WebDriver d) {
             return d.findElement(By.xpath("//i[@uib-tooltip='WebSocket Connected']"))
@@ -151,6 +159,11 @@ public class WebDriverManager implements Closeable {
       } catch (TimeoutException e) {
         LOG.info("Exception in WebDriverManager while WebDriverWait ", e);
         driver.navigate().to(url);
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
 
@@ -184,6 +197,7 @@ public class WebDriverManager implements Closeable {
 
     FirefoxOptions firefoxOptions = new FirefoxOptions();
     firefoxOptions.setProfile(profile);
+    firefoxOptions.addArguments("--headless");
 
     LOG.info("Firefox version " + firefoxOptions.getBrowserVersion() + " detected");
     GeckoDriverService service =
