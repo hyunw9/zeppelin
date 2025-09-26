@@ -845,7 +845,6 @@ public class Notebook {
     }
   }
 
-
   private void fireNoteRemoveEvent(Note note, AuthenticationInfo subject) {
     for (NoteEventListener listener : noteEventListeners) {
       listener.onNoteRemove(note, subject);

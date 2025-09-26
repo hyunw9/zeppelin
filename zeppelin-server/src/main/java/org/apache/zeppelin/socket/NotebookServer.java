@@ -79,7 +79,15 @@ import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.apache.zeppelin.interpreter.thrift.ParagraphInfo;
 import org.apache.zeppelin.interpreter.thrift.ServiceException;
 import org.apache.zeppelin.jupyter.JupyterUtil;
-import org.apache.zeppelin.notebook.*;
+import org.apache.zeppelin.notebook.AuthorizationService;
+import org.apache.zeppelin.notebook.Note;
+import org.apache.zeppelin.notebook.NoteEventListener;
+import org.apache.zeppelin.notebook.NoteInfo;
+import org.apache.zeppelin.notebook.NoteParser;
+import org.apache.zeppelin.notebook.Notebook;
+import org.apache.zeppelin.notebook.NotebookImportDeserializer;
+import org.apache.zeppelin.notebook.Paragraph;
+import org.apache.zeppelin.notebook.ParagraphJobListener;
 import org.apache.zeppelin.notebook.repo.NotebookRepoWithVersionControl.Revision;
 import org.apache.zeppelin.rest.exception.ForbiddenException;
 import org.apache.zeppelin.scheduler.Job;
@@ -1919,19 +1927,7 @@ public class NotebookServer implements AngularObjectRegistryListener,
       return;
     }
 
-    try {
-      broadcastUpdateNoteJobInfo(note, System.currentTimeMillis() - 5000);
-    } catch (IOException e) {
-      LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
-    }
-
-    try {
-      getJobManagerService().removeNoteJobInfo(note.getId(), null,
-          new JobManagerServiceCallback());
-    } catch (IOException e) {
-      LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
-    }
-
+    handleNoteRemove(note);
   }
 
   @Override
@@ -2389,6 +2385,30 @@ public class NotebookServer implements AngularObjectRegistryListener,
         }
         conn.send(serializeMessage(new Message(OP.ERROR_INFO).put("info", message)));
       }
+    }
+  }
+
+  private void handleNoteEvent(NoteEvent event) {
+    if (event instanceof NoteRemoveEvent) {
+      Note note = event.getNote();
+      handleNoteRemove(note);
+    } else {
+      LOGGER.warn("Unknown event type: {}", event.getClass().getName());
+    }
+  }
+
+  private void handleNoteRemove(Note note) {
+    try {
+      broadcastUpdateNoteJobInfo(note, System.currentTimeMillis() - 5000);
+    } catch (IOException e) {
+      LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
+    }
+
+    try {
+      getJobManagerService().removeNoteJobInfo(note.getId(), null,
+          new JobManagerServiceCallback());
+    } catch (IOException e) {
+      LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
     }
   }
 }
