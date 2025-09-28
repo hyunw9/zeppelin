@@ -1,6 +1,9 @@
 package org.apache.zeppelin.event;
 
 import io.reactivex.rxjava3.disposables.Disposable;
+
+import org.apache.zeppelin.notebook.Note;
+import org.apache.zeppelin.user.AuthenticationInfo;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -8,6 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 class MockEvent {
     String payload;
@@ -26,6 +30,18 @@ class Publisher {
 
     public void createNote(String noteId) {
         eventBus.post(new MockEvent(noteId));
+    }
+}
+
+class NoteCreateEventPublisher {
+    private final ZeppelinEventBus eventBus;
+
+    public NoteCreateEventPublisher(ZeppelinEventBus eventBus) {
+        this.eventBus = eventBus;
+    }
+
+    public void publishNoteCreateEvent(Note note, AuthenticationInfo subject) {
+        eventBus.post(new NoteCreateEvent(note, subject));
     }
 }
 
@@ -48,6 +64,19 @@ class Subscriber {
             disposable.dispose();
         }
     }
+}
+
+class NoteCreateEventSubscriber {
+    List<NoteCreateEvent> receivedEvents = new ArrayList<>();
+    Disposable disposable;
+
+   NoteCreateEventSubscriber(ZeppelinEventBus eventBus) {
+       this.disposable = eventBus.observe(NoteCreateEvent.class)
+           .subscribe(event -> {
+               receivedEvents.add(event);
+               System.out.println("NoteCreateEventSubscriber: Note created with ID: " + event.getNote().getId());
+           });
+   }
 }
 
 class ZeppelinEventBusTest {
@@ -74,5 +103,62 @@ class ZeppelinEventBusTest {
 
         // Cleanup
         subscriber.stopListening();
+    }
+
+    @Test
+    void testNoteCreateEventFlow() throws InterruptedException {
+        // Given
+        var bus = new ZeppelinEventBus();
+
+        Note mockNote = mock(Note.class);
+        when(mockNote.getId()).thenReturn("note_123");
+        when(mockNote.getName()).thenReturn("mockNote");
+
+        AuthenticationInfo mockSubject = new AuthenticationInfo("testUser");
+
+        var publisher = new NoteCreateEventPublisher(bus);
+        var subscriber = new NoteCreateEventSubscriber(bus);
+
+        // When
+        publisher.publishNoteCreateEvent(mockNote, mockSubject);
+
+        // Then
+        List<NoteCreateEvent> received = subscriber.receivedEvents;
+
+        assertEquals(1, received.size());
+        assertEquals("note_123", received.get(0).getNote().getId());
+        assertEquals("testUser", received.get(0).getSubject().getUser());
+        assertEquals(mockNote, received.get(0).getNote());
+        assertEquals(mockSubject, received.get(0).getSubject());
+    }
+
+    @Test
+    void testMultipleNoteCreateEvenst() throws InterruptedException {
+        // Given
+        var bus = new ZeppelinEventBus();
+        var testCount = 5;
+
+        var publisher = new NoteCreateEventPublisher(bus);
+        var subscriber = new NoteCreateEventSubscriber(bus);
+
+        // When
+        for (int i = 0; i < testCount; i++) {
+            Note mockNote = mock(Note.class);
+            when(mockNote.getId()).thenReturn("note_" + i);
+            when(mockNote.getName()).thenReturn("mockNote" + i);
+
+            AuthenticationInfo mockSubject = new AuthenticationInfo("testUser" + i);
+
+            publisher.publishNoteCreateEvent(mockNote, mockSubject);
+        }
+
+        // Then
+        List<NoteCreateEvent> received = subscriber.receivedEvents;
+
+        assertEquals(testCount, received.size());
+        for (int i = 0; i < testCount; i++) {
+            assertEquals("note_" + i, received.get(i).getNote().getId());
+            assertEquals("testUser" + i, received.get(i).getSubject().getUser());
+        }
     }
 }
