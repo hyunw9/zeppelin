@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
 class MockEvent {
   String payload;
@@ -119,5 +120,62 @@ class ZeppelinEventBusTest {
 
     // Cleanup
     subscriber.stopListening();
+  }
+
+  @Test
+  void testNoteCreateEventFlow() throws InterruptedException {
+    // Given
+    var bus = new ZeppelinEventBus();
+
+    Note mockNote = mock(Note.class);
+    when(mockNote.getId()).thenReturn("note_123");
+    when(mockNote.getName()).thenReturn("mockNote");
+
+    AuthenticationInfo mockSubject = new AuthenticationInfo("testUser");
+
+    var publisher = new NoteCreateEventPublisher(bus);
+    var subscriber = new NoteCreateEventSubscriber(bus);
+
+    // When
+    publisher.publishNoteCreateEvent(mockNote, mockSubject);
+
+    // Then
+    List<NoteCreateEvent> received = subscriber.receivedEvents;
+
+    assertEquals(1, received.size());
+    assertEquals("note_123", received.get(0).getNote().getId());
+    assertEquals("testUser", received.get(0).getSubject().getUser());
+    assertEquals(mockNote, received.get(0).getNote());
+    assertEquals(mockSubject, received.get(0).getSubject());
+  }
+
+  @Test
+  void testMultipleNoteCreateEvenst() throws InterruptedException {
+    // Given
+    var bus = new ZeppelinEventBus();
+    var testCount = 5;
+
+    var publisher = new NoteCreateEventPublisher(bus);
+    var subscriber = new NoteCreateEventSubscriber(bus);
+
+    // When
+    for (int i = 0; i < testCount; i++) {
+      Note mockNote = mock(Note.class);
+      when(mockNote.getId()).thenReturn("note_" + i);
+      when(mockNote.getName()).thenReturn("mockNote" + i);
+
+      AuthenticationInfo mockSubject = new AuthenticationInfo("testUser" + i);
+
+      publisher.publishNoteCreateEvent(mockNote, mockSubject);
+    }
+
+    // Then
+    List<NoteCreateEvent> received = subscriber.receivedEvents;
+
+    assertEquals(testCount, received.size());
+    for (int i = 0; i < testCount; i++) {
+      assertEquals("note_" + i, received.get(i).getNote().getId());
+      assertEquals("testUser" + i, received.get(i).getSubject().getUser());
+    }
   }
 }
