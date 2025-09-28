@@ -65,6 +65,7 @@ import org.apache.zeppelin.display.AngularObjectRegistryListener;
 import org.apache.zeppelin.display.GUI;
 import org.apache.zeppelin.display.Input;
 import org.apache.zeppelin.event.EventBus;
+import org.apache.zeppelin.event.NoteCreateEvent;
 import org.apache.zeppelin.event.NoteEvent;
 import org.apache.zeppelin.event.NoteRemoveEvent;
 import org.apache.zeppelin.helium.ApplicationEventListener;
@@ -183,6 +184,8 @@ public class NotebookServer implements AngularObjectRegistryListener,
             } catch (IOException e) {
               LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
             }
+          } else if (event instanceof NoteCreateEvent) {
+            handleNoteCreateEvent((NoteCreateEvent)event);
           } else {
             LOGGER.warn("Unknown event type: {}", event.getClass().getName());
           }
@@ -1948,6 +1951,11 @@ public class NotebookServer implements AngularObjectRegistryListener,
 
   @Override
   public void onNoteCreate(Note note, AuthenticationInfo subject) {
+    if( zConf.isEventBusEnabled()) {
+      LOGGER.debug("ZeppelinEventBus is enabled, skipping Listner");
+      return;
+    }
+
     try {
       getJobManagerService().getNoteJobInfo(note.getId(), null,
           new JobManagerServiceCallback());
@@ -2161,6 +2169,19 @@ public class NotebookServer implements AngularObjectRegistryListener,
         }
         removeNoteAngularObject(noteInfo.getId(), angularObject, interpreterGroupId);
       });
+    }
+  }
+
+  private void handleNoteCreateEvent(NoteCreateEvent event) {
+    try {
+      broadcastUpdateNoteJobInfo(event.getNote(), System.currentTimeMillis() - 5000);
+    } catch (IOException e) {
+      LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
+    }
+    try {
+      getJobManagerService().getNoteJobInfo(event.getNote().getId(), null, new JobManagerServiceCallback());
+    } catch (IOException e) {
+      LOGGER.warn("can not broadcast for job manager: {}", e.getMessage(), e);
     }
   }
 
