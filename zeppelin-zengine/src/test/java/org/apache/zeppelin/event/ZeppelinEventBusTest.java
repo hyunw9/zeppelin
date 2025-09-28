@@ -94,6 +94,11 @@ class NoteCreateEventSubscriber {
                System.out.println("NoteCreateEventSubscriber: Note created with ID: " + event.getNote().getId());
            });
    }
+	public void stopListening() {
+		if (disposable != null && !disposable.isDisposed()) {
+			disposable.dispose();
+		}
+	}
 }
 
 class ZeppelinEventBusTest {
@@ -123,59 +128,63 @@ class ZeppelinEventBusTest {
   }
 
   @Test
-  void testNoteCreateEventFlow() throws InterruptedException {
-    // Given
-    var bus = new ZeppelinEventBus();
+	void testNoteCreateEventFlow() throws InterruptedException {
+		// Given
+		var bus = new ZeppelinEventBus();
 
-    Note mockNote = mock(Note.class);
-    when(mockNote.getId()).thenReturn("note_123");
-    when(mockNote.getName()).thenReturn("mockNote");
+		Note mockNote = mock(Note.class);
+		when(mockNote.getId()).thenReturn("note_123");
+		when(mockNote.getName()).thenReturn("mockNote");
 
-    AuthenticationInfo mockSubject = new AuthenticationInfo("testUser");
+		AuthenticationInfo mockSubject = new AuthenticationInfo("testUser");
 
-    var publisher = new NoteCreateEventPublisher(bus);
-    var subscriber = new NoteCreateEventSubscriber(bus);
+		var publisher = new NoteCreateEventPublisher(bus);
+		var subscriber = new NoteCreateEventSubscriber(bus);
 
-    // When
-    publisher.publishNoteCreateEvent(mockNote, mockSubject);
+		// When
+		publisher.publishNoteCreateEvent(mockNote, mockSubject);
 
-    // Then
-    List<NoteCreateEvent> received = subscriber.receivedEvents;
+		// Then
+		List<NoteCreateEvent> received = subscriber.receivedEvents;
 
-    assertEquals(1, received.size());
-    assertEquals("note_123", received.get(0).getNote().getId());
-    assertEquals("testUser", received.get(0).getSubject().getUser());
-    assertEquals(mockNote, received.get(0).getNote());
-    assertEquals(mockSubject, received.get(0).getSubject());
-  }
+		assertEquals(1, received.size());
+		assertEquals("note_123", received.get(0).getNote().getId());
+		assertEquals("testUser", received.get(0).getSubject().getUser());
+		assertEquals(mockNote, received.get(0).getNote());
+		assertEquals(mockSubject, received.get(0).getSubject());
 
-  @Test
-  void testMultipleNoteCreateEvenst() throws InterruptedException {
-    // Given
-    var bus = new ZeppelinEventBus();
-    var testCount = 5;
+		subscriber.stopListening();
+	}
 
-    var publisher = new NoteCreateEventPublisher(bus);
-    var subscriber = new NoteCreateEventSubscriber(bus);
+	@Test
+	void testMultipleNoteCreateEvenst() throws InterruptedException {
+		// Given
+		var bus = new ZeppelinEventBus();
+		var testCount = 5;
 
-    // When
-    for (int i = 0; i < testCount; i++) {
-      Note mockNote = mock(Note.class);
-      when(mockNote.getId()).thenReturn("note_" + i);
-      when(mockNote.getName()).thenReturn("mockNote" + i);
+		var publisher = new NoteCreateEventPublisher(bus);
+		var subscriber = new NoteCreateEventSubscriber(bus);
 
-      AuthenticationInfo mockSubject = new AuthenticationInfo("testUser" + i);
+		// When
+		for (int i = 0; i < testCount; i++) {
+			Note mockNote = mock(Note.class);
+			when(mockNote.getId()).thenReturn("note_" + i);
+			when(mockNote.getName()).thenReturn("mockNote" + i);
 
-      publisher.publishNoteCreateEvent(mockNote, mockSubject);
-    }
+			AuthenticationInfo mockSubject = new AuthenticationInfo("testUser" + i);
 
-    // Then
-    List<NoteCreateEvent> received = subscriber.receivedEvents;
+			publisher.publishNoteCreateEvent(mockNote, mockSubject);
+		}
 
-    assertEquals(testCount, received.size());
-    for (int i = 0; i < testCount; i++) {
-      assertEquals("note_" + i, received.get(i).getNote().getId());
-      assertEquals("testUser" + i, received.get(i).getSubject().getUser());
-    }
-  }
+		// Then
+		List<NoteCreateEvent> received = subscriber.receivedEvents;
+
+		assertEquals(testCount, received.size());
+		for (int i = 0; i < testCount; i++) {
+			assertEquals("note_" + i, received.get(i).getNote().getId());
+			assertEquals("testUser" + i, received.get(i).getSubject().getUser());
+		}
+
+		subscriber.stopListening();
+	}
 }
