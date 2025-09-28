@@ -45,6 +45,7 @@ import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.display.AngularObject;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.event.EventBus;
+import org.apache.zeppelin.event.NoteCreateEvent;
 import org.apache.zeppelin.event.NoteRemoveEvent;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterFactory;
@@ -330,6 +331,7 @@ public class Notebook {
       noteManager.saveNote(note, subject);
     }
     fireNoteCreateEvent(note, subject);
+    eventBus.post(new NoteCreateEvent(note, subject));
     return note.getId();
   }
 
