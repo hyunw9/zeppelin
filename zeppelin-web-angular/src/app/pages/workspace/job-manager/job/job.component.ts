@@ -21,7 +21,7 @@ import {
   SimpleChanges
 } from '@angular/core';
 
-import formatDistance from 'date-fns/formatDistance';
+import { formatDistance } from 'date-fns';
 
 import { JobsItem, JobStatus } from '@zeppelin/sdk';
 
@@ -33,9 +33,9 @@ import { JobsItem, JobStatus } from '@zeppelin/sdk';
 })
 export class JobManagerJobComponent implements OnInit, OnChanges {
   @Input() note!: JobsItem;
-  @Input() highlight: string | null = null;
-  @Output() readonly start = new EventEmitter<string>();
-  @Output() readonly stop = new EventEmitter<string>();
+  @Input() highlight = '';
+  @Output() readonly startJob = new EventEmitter<string>();
+  @Output() readonly stopJob = new EventEmitter<string>();
 
   icon = 'file';
   relativeTime = '';
@@ -64,18 +64,18 @@ export class JobManagerJobComponent implements OnInit, OnChanges {
   }
 
   onStartClick(): void {
-    this.start.emit(this.note.noteId);
+    this.startJob.emit(this.note.noteId);
   }
 
   onStopClick(): void {
-    this.stop.emit(this.note.noteId);
+    this.stopJob.emit(this.note.noteId);
   }
 
   constructor() {}
 
   ngOnInit() {}
 
-  ngOnChanges(changes: SimpleChanges): void {
+  ngOnChanges(_changes: SimpleChanges): void {
     this.setIcon();
     this.setRelativeTime();
     this.setProgress();

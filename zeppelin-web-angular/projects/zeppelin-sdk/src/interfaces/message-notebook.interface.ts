@@ -62,23 +62,27 @@ export interface Note {
   };
 }
 
+export interface ImportNote {
+  note: Exclude<Required<Note>['note'], 'path'>;
+}
+
 export interface NoteAngularObjects {
-  // tslint:disable-next-line no-any
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
 export interface NoteInfo {
-  // tslint:disable-next-line no-any
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
 export interface NoteParams {
-  // tslint:disable-next-line no-any
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
 export interface NoteForms {
-  // tslint:disable-next-line no-any
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -121,6 +125,13 @@ export interface NoteRevisionForCompare {
   position: string;
 }
 
+export interface NoteRevisionForCompareReceived {
+  noteId: string;
+  revisionId: string;
+  position: string;
+  note: Note['note'];
+}
+
 export interface CollaborativeModeStatus {
   status: boolean;
   users: string[];
@@ -144,6 +155,14 @@ export interface SaveNoteFormsSend {
 
 export interface NoteRunningStatus {
   status: boolean;
+}
+
+export interface NewNoteReceived {
+  note: Required<Note>['note'];
+}
+
+export interface ImportNoteReceived {
+  note: Required<Note>['note'];
 }
 
 export interface ParagraphAdded {

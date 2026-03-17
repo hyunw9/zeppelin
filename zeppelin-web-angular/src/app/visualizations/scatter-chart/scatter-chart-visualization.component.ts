@@ -41,11 +41,14 @@ export class ScatterChartVisualizationComponent extends G2VisualizationComponent
   @ViewChild(VisualizationScatterSettingComponent, { static: false })
   scatterSettingComponent!: VisualizationScatterSettingComponent;
 
-  constructor(@Inject(VISUALIZATION) public visualization: Visualization, private cdr: ChangeDetectorRef) {
+  constructor(
+    @Inject(VISUALIZATION) public visualization: Visualization,
+    private cdr: ChangeDetectorRef
+  ) {
     super(visualization);
   }
 
-  refreshSetting(config: GraphConfig) {
+  refreshSetting(_config: GraphConfig) {
     this.scatterSettingComponent.init();
     this.cdr.markForCheck();
   }

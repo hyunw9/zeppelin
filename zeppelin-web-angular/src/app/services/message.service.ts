@@ -16,6 +16,7 @@ import { Observable } from 'rxjs';
 import { MessageInterceptor, MESSAGE_INTERCEPTOR } from '@zeppelin/interfaces';
 import {
   DynamicFormParams,
+  ImportNote,
   Message,
   MessageReceiveDataTypeMap,
   MessageSendDataTypeMap,
@@ -45,9 +46,7 @@ export class MessageService extends Message implements OnDestroy {
     super();
   }
 
-  interceptReceived(
-    data: WebSocketMessage<keyof MessageReceiveDataTypeMap>
-  ): WebSocketMessage<keyof MessageReceiveDataTypeMap> {
+  interceptReceived(data: WebSocketMessage<MessageReceiveDataTypeMap>): WebSocketMessage<MessageReceiveDataTypeMap> {
     return this.messageInterceptor ? this.messageInterceptor.received(data) : super.interceptReceived(data);
   }
 
@@ -63,20 +62,20 @@ export class MessageService extends Message implements OnDestroy {
     return super.closed();
   }
 
-  sent(): Observable<WebSocketMessage<keyof MessageSendDataTypeMap>> {
+  sent(): Observable<WebSocketMessage<MessageSendDataTypeMap>> {
     return super.sent();
   }
 
-  received(): Observable<WebSocketMessage<keyof MessageReceiveDataTypeMap>> {
+  received(): Observable<WebSocketMessage<MessageReceiveDataTypeMap>> {
     return super.received();
   }
 
   send<K extends keyof MessageSendDataTypeMap>(...args: SendArgumentsType<K>): void {
-    super.send(...args);
+    super.send<K>(...args);
   }
 
   receive<K extends keyof MessageReceiveDataTypeMap>(op: K): Observable<Record<K, MessageReceiveDataTypeMap[K]>[K]> {
-    return super.receive(op);
+    return super.receive<K>(op);
   }
 
   opened(): Observable<Event> {
@@ -191,7 +190,7 @@ export class MessageService extends Message implements OnDestroy {
     super.angularObjectUpdate(noteId, paragraphId, name, value, interpreterGroupId);
   }
 
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   angularObjectClientBind(noteId: string, name: string, value: any, paragraphId: string): void {
     super.angularObjectClientBind(noteId, name, value, paragraphId);
   }
@@ -275,7 +274,7 @@ export class MessageService extends Message implements OnDestroy {
     super.patchParagraph(paragraphId, noteId, patch);
   }
 
-  importNote(note: SendNote): void {
+  importNote(note: ImportNote['note']): void {
     super.importNote(note);
   }
 

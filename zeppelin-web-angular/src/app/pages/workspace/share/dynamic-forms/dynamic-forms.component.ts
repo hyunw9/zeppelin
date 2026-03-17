@@ -40,7 +40,7 @@ export class NotebookParagraphDynamicFormsComponent implements OnInit, OnChanges
 
   @Input() formDefs!: DynamicForms;
   @Input() paramDefs!: DynamicFormParams;
-  @Input() runOnChange = false;
+  @Input() runOnChange?: boolean = false;
   @Input() disable = false;
   @Input() removable = false;
   @Output() readonly formChange = new EventEmitter<void>();
@@ -111,7 +111,7 @@ export class NotebookParagraphDynamicFormsComponent implements OnInit, OnChanges
     this.formChange$.pipe(debounceTime(800), takeUntil(this.destroy$)).subscribe(() => this.formChange.emit());
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
+  ngOnChanges(_changes: SimpleChanges): void {
     this.setForms();
   }
 

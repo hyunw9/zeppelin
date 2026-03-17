@@ -10,30 +10,37 @@
  * limitations under the License.
  */
 
-import { ChangeDetectorRef, QueryList } from '@angular/core';
-
+import { ChangeDetectorRef } from '@angular/core';
 import {
   AngularObjectRemove,
   AngularObjectUpdate,
   GraphConfig,
+  Message,
   MessageReceiveDataTypeMap,
   OP,
   ParagraphConfig,
+  ParagraphConfigResult,
+  ParagraphConfigResults,
   ParagraphEditorSetting,
   ParagraphItem,
   ParagraphIResultsMsgItem
 } from '@zeppelin/sdk';
 
-import { MessageService } from '@zeppelin/services/message.service';
-import { NgZService } from '@zeppelin/services/ng-z.service';
-import { NoteStatusService, ParagraphStatus } from '@zeppelin/services/note-status.service';
-
 import * as DiffMatchPatch from 'diff-match-patch';
 import { isEmpty, isEqual } from 'lodash';
 
-import { NotebookParagraphResultComponent } from '@zeppelin/pages/workspace/share/result/result.component';
-import { ParagraphConfigResults, ParagraphResults } from '../../../../projects/zeppelin-sdk/src';
 import { MessageListener, MessageListenersManager } from '../message-listener/message-listener';
+import { AngularContextManager } from './angular-context-manager';
+import { NoteStatus } from './note-status';
+
+export const ParagraphStatus = {
+  READY: 'READY',
+  PENDING: 'PENDING',
+  RUNNING: 'RUNNING',
+  FINISHED: 'FINISHED',
+  ABORT: 'ABORT',
+  ERROR: 'ERROR'
+};
 
 export abstract class ParagraphBase extends MessageListenersManager {
   paragraph?: ParagraphItem;
@@ -43,8 +50,8 @@ export abstract class ParagraphBase extends MessageListenersManager {
   revisionView = false;
   diffMatchPatch = new DiffMatchPatch();
   isParagraphRunning = false;
-  results: ParagraphResults | undefined = [];
-  configs: ParagraphConfigResults | undefined = {};
+  results: ParagraphIResultsMsgItem[] = [];
+  configs: ParagraphConfigResults = {};
   progress = 0;
   colWidthOption = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   editorSetting: ParagraphEditorSetting = {
@@ -52,13 +59,10 @@ export abstract class ParagraphBase extends MessageListenersManager {
     forms: {}
   };
 
-  // Initialized by `ViewChildren` in the class which extends ParagraphBase
-  notebookParagraphResultComponents!: QueryList<NotebookParagraphResultComponent>;
-
   constructor(
-    public messageService: MessageService,
-    protected noteStatusService: NoteStatusService,
-    protected ngZService: NgZService,
+    public messageService: Message,
+    protected noteStatusService: NoteStatus,
+    protected angularContextManager: AngularContextManager,
     protected cdr: ChangeDetectorRef
   ) {
     super(messageService);
@@ -123,28 +127,27 @@ export abstract class ParagraphBase extends MessageListenersManager {
     if (this.isUpdateRequired(oldPara, newPara)) {
       this.updateParagraph(oldPara, newPara, () => {
         if (newPara.results && newPara.results.msg) {
-          // tslint:disable-next-line:no-for-in-array
-          for (const i in newPara.results.msg) {
-            if (newPara.results.msg[i]) {
-              const newResult = newPara.results.msg ? newPara.results.msg[i] : new ParagraphIResultsMsgItem();
-              const oldResult =
-                oldPara.results && oldPara.results.msg ? oldPara.results.msg[i] : new ParagraphIResultsMsgItem();
-              const newConfig = newPara.config.results ? newPara.config.results[i] : { graph: new GraphConfig() };
-              const oldConfig = oldPara.config.results ? oldPara.config.results[i] : { graph: new GraphConfig() };
-              if (!isEqual(newResult, oldResult) || !isEqual(newConfig, oldConfig)) {
-                const resultComponent = this.notebookParagraphResultComponents.toArray()[i];
-                if (resultComponent) {
-                  resultComponent.updateResult(newConfig, newResult);
-                }
-              }
+          newPara.results.msg.forEach((newResult, idx) => {
+            const oldResult =
+              oldPara.results && oldPara.results.msg ? oldPara.results.msg[idx] : new ParagraphIResultsMsgItem();
+            const newConfig = newPara.config.results ? newPara.config.results[idx] : { graph: new GraphConfig() };
+            const oldConfig = oldPara.config.results ? oldPara.config.results[idx] : { graph: new GraphConfig() };
+            if (!isEqual(newResult, oldResult) || !isEqual(newConfig, oldConfig)) {
+              this.updateParagraphResult(idx, newConfig, newResult);
             }
-          }
+          });
         }
         this.cdr.markForCheck();
       });
       this.cdr.markForCheck();
     }
   }
+
+  abstract updateParagraphResult(
+    resultIndex: number,
+    config: ParagraphConfigResult,
+    result: ParagraphIResultsMsgItem
+  ): void;
 
   @MessageListener(OP.PATCH_PARAGRAPH)
   patchParagraph(data: MessageReceiveDataTypeMap[OP.PATCH_PARAGRAPH]) {
@@ -169,7 +172,7 @@ export abstract class ParagraphBase extends MessageListenersManager {
     }
     if (data.paragraphId === this.paragraph.id) {
       const { name, object } = data.angularObject;
-      this.ngZService.setContextValue(name, object, data.paragraphId, false);
+      this.angularContextManager.setContextValue(name, object, data.paragraphId, false);
     }
   }
 
@@ -179,7 +182,7 @@ export abstract class ParagraphBase extends MessageListenersManager {
       throw new Error('paragraph is not defined');
     }
     if (data.paragraphId === this.paragraph.id) {
-      this.ngZService.unsetContextValue(data.name, data.paragraphId, false);
+      this.angularContextManager.unsetContextValue(data.name, data.paragraphId, false);
     }
   }
 
@@ -288,8 +291,8 @@ export abstract class ParagraphBase extends MessageListenersManager {
 
   setResults(paragraph: ParagraphItem) {
     if (paragraph.results) {
-      this.results = paragraph.results.msg;
-      this.configs = paragraph.config.results;
+      this.results = paragraph.results.msg || [];
+      this.configs = paragraph.config.results || {};
     }
     if (!paragraph.config) {
       paragraph.config = {};
@@ -335,7 +338,7 @@ export abstract class ParagraphBase extends MessageListenersManager {
     }
   }
 
-  runParagraphUsingSpell(paragraphText: string, magic: string, propagated: boolean) {
+  runParagraphUsingSpell(_paragraphText: string, _magic: string, _propagated: boolean) {
     // TODO(hsuanxyz)
   }
 

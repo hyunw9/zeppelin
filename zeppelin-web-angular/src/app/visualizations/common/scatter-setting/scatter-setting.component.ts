@@ -31,10 +31,10 @@ export class VisualizationScatterSettingComponent implements OnInit {
   columns: Array<Exclude<VisualizationScatterChart[keyof VisualizationScatterChart], undefined>> = [];
 
   field: {
-    xAxis: Array<VisualizationScatterChart['xAxis']>;
-    yAxis: Array<VisualizationScatterChart['yAxis']>;
-    group: Array<VisualizationScatterChart['group']>;
-    size: Array<VisualizationScatterChart['size']>;
+    xAxis: Array<Exclude<VisualizationScatterChart['xAxis'], undefined>>;
+    yAxis: Array<Exclude<VisualizationScatterChart['yAxis'], undefined>>;
+    group: Array<Exclude<VisualizationScatterChart['group'], undefined>>;
+    size: Array<Exclude<VisualizationScatterChart['size'], undefined>>;
   } = {
     xAxis: [],
     yAxis: [],
@@ -42,7 +42,7 @@ export class VisualizationScatterSettingComponent implements OnInit {
     size: []
   };
 
-  // tslint:disable-next-line
+  // eslint-disable-next-line
   drop(event: CdkDragDrop<any[]>) {
     this.clean(event.container.data, false);
     event.container.data.push(event.previousContainer.data[event.previousIndex]);
@@ -50,7 +50,7 @@ export class VisualizationScatterSettingComponent implements OnInit {
     this.updateConfig();
   }
 
-  // tslint:disable-next-line
+  // eslint-disable-next-line
   clean(data: any[], update = true): void {
     while (data.length > 0) {
       data.splice(0, 1);

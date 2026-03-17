@@ -21,16 +21,20 @@ import {
   FolderRename,
   GetInterpreterBindings,
   GetNode,
+  ImportNote,
+  ImportNoteReceived,
   ListRevision,
   ListRevisionHistory,
   MoveFolderToTrash,
   MoveNoteToTrash,
   NewNote,
+  NewNoteReceived,
   Note,
   NotesInfo,
   NoteRename,
   NoteRevision,
   NoteRevisionForCompare,
+  NoteRevisionForCompareReceived,
   NoteRunningStatus,
   NoteUpdate,
   NoteUpdated,
@@ -76,12 +80,12 @@ import {
   RunParagraph
 } from './message-paragraph.interface';
 
-import { ListNoteJobs, ListUpdateNoteJobs } from './message-job.interface';
+import { JobManagerDisabled, ListNoteJobs, ListUpdateNoteJobs } from './message-job.interface';
 
 import { InterpreterBindings, InterpreterSetting } from './message-interpreter.interface';
 import { OP } from './message-operator.interface';
 
-export type MixMessageDataTypeMap = MessageSendDataTypeMap & MessageReceiveDataTypeMap;
+export type MessageDataTypeMap = MessageSendDataTypeMap | MessageReceiveDataTypeMap;
 
 export interface MessageReceiveDataTypeMap {
   [OP.COMPLETION_LIST]: CompletionReceived;
@@ -92,6 +96,7 @@ export interface MessageReceiveDataTypeMap {
   [OP.ERROR_INFO]: ErrorInfo;
   [OP.LIST_NOTE_JOBS]: ListNoteJobs;
   [OP.LIST_UPDATE_NOTE_JOBS]: ListUpdateNoteJobs;
+  [OP.JOB_MANAGER_DISABLED]: JobManagerDisabled;
   [OP.INTERPRETER_SETTINGS]: InterpreterSetting;
   [OP.LIST_REVISION_HISTORY]: ListRevision;
   [OP.INTERPRETER_BINDINGS]: InterpreterBindings;
@@ -99,7 +104,8 @@ export interface MessageReceiveDataTypeMap {
   [OP.SET_NOTE_REVISION]: SetNoteRevisionStatus;
   [OP.PARAGRAPH_ADDED]: ParagraphAdded;
   [OP.NOTE_RUNNING_STATUS]: NoteRunningStatus;
-  [OP.NEW_NOTE]: NoteRevision;
+  [OP.NEW_NOTE]: NewNoteReceived;
+  [OP.IMPORT_NOTE]: ImportNoteReceived;
   [OP.SAVE_NOTE_FORMS]: SaveNoteFormsSend;
   [OP.PARAGRAPH]: UpdateParagraph;
   [OP.PATCH_PARAGRAPH]: PatchParagraphSend;
@@ -113,6 +119,7 @@ export interface MessageReceiveDataTypeMap {
   [OP.ANGULAR_OBJECT_UPDATE]: AngularObjectUpdate;
   [OP.ANGULAR_OBJECT_REMOVE]: AngularObjectRemove;
   [OP.PARAS_INFO]: ParasInfo;
+  [OP.NOTE_REVISION_FOR_COMPARE]: NoteRevisionForCompareReceived;
 }
 
 export interface MessageSendDataTypeMap {
@@ -153,7 +160,7 @@ export interface MessageSendDataTypeMap {
   [OP.COMPLETION]: Completion;
   [OP.COMMIT_PARAGRAPH]: CommitParagraph;
   [OP.PATCH_PARAGRAPH]: PatchParagraphReceived;
-  [OP.IMPORT_NOTE]: {}; // TODO(hsuanxyz)
+  [OP.IMPORT_NOTE]: ImportNote;
   [OP.CHECKPOINT_NOTE]: CheckpointNote;
   [OP.SET_NOTE_REVISION]: SetNoteRevision;
   [OP.LIST_REVISION_HISTORY]: ListRevisionHistory;

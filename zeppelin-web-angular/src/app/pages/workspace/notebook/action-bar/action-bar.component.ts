@@ -14,11 +14,13 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
   EventEmitter,
   Inject,
   Input,
   OnInit,
-  Output
+  Output,
+  ViewChild
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -27,10 +29,15 @@ import { NzModalService } from 'ng-zorro-antd/modal';
 import { MessageListener, MessageListenersManager } from '@zeppelin/core';
 import { TRASH_FOLDER_ID_TOKEN } from '@zeppelin/interfaces';
 import { MessageReceiveDataTypeMap, Note, OP, RevisionListItem } from '@zeppelin/sdk';
-import { MessageService, NoteStatusService, SaveAsService, TicketService } from '@zeppelin/services';
-
-import { NotebookService } from '@zeppelin/services/notebook.service';
-import { NoteCreateComponent } from '@zeppelin/share/note-create/note-create.component';
+import {
+  ConfigurationService,
+  MessageService,
+  NotebookService,
+  NoteStatusService,
+  SaveAsService,
+  TicketService
+} from '@zeppelin/services';
+import { NoteCreateComponent, ShortcutComponent } from '@zeppelin/share';
 
 @Component({
   selector: 'zeppelin-notebook-action-bar',
@@ -45,7 +52,7 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
   @Input() noteRevisions: RevisionListItem[] = [];
   @Input() currentRevision?: string;
   @Input() collaborativeMode = false;
-  @Input() collaborativeModeUsers = [];
+  @Input() collaborativeModeUsers: string[] = [];
   @Input() revisionView = false;
   @Input() activatedExtension: 'interpreter' | 'permissions' | 'revisions' | 'hide' = 'hide';
   @Output() readonly activatedExtensionChange = new EventEmitter<
@@ -53,6 +60,8 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
   >();
   @Output() readonly editorHideChange = new EventEmitter<boolean>();
   @Output() readonly tableHideChange = new EventEmitter<boolean>();
+  @Output() readonly handleSearch = new EventEmitter<string>();
+  @ViewChild('searchInput', { static: false }) searchInputRef?: ElementRef<HTMLInputElement>;
   lfOption: Array<'report' | 'default' | 'simple'> = ['default', 'simple', 'report'];
   isRevisionSupported: boolean = false;
   isNoteParagraphRunning = false;
@@ -60,6 +69,9 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
   editorHide = false;
   commitVisible = false;
   tableHide = false;
+  isSearchMenuVisible = false;
+  searchText = '';
+  replaceText = '';
   cronOption = [
     { name: 'None', value: undefined },
     { name: '1m', value: '0 0/1 * * * ?' },
@@ -115,12 +127,15 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
       this.activatedExtension = 'hide';
     } else {
       this.activatedExtension = extension;
+      if (extension === 'interpreter') {
+        this.messageService.getInterpreterBindings(this.note.id);
+      }
     }
     this.activatedExtensionChange.emit(this.activatedExtension);
   }
 
   @MessageListener(OP.PARAGRAPH)
-  paragraphUpdate(data: MessageReceiveDataTypeMap[OP.PARAGRAPH]) {
+  paragraphUpdate(_data: MessageReceiveDataTypeMap[OP.PARAGRAPH]) {
     this.updateIsNoteParagraphRunning();
     this.cdr.markForCheck();
   }
@@ -128,15 +143,13 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
   runAllParagraphs() {
     this.messageService.runAllParagraphs(
       this.note.id,
-      this.note.paragraphs.map(p => {
-        return {
-          id: p.id,
-          title: p.title,
-          paragraph: p.text,
-          config: p.config,
-          params: p.settings.params
-        };
-      })
+      this.note.paragraphs.map(p => ({
+        id: p.id,
+        title: p.title,
+        paragraph: p.text,
+        config: p.config,
+        params: p.settings.params
+      }))
     );
   }
 
@@ -144,7 +157,7 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
     this.messageService.paragraphClearAllOutput(this.note.id);
   }
 
-  setCronScheduler(cronExpr: string) {
+  setCronScheduler(cronExpr: string | undefined) {
     if (cronExpr) {
       if (!this.note.config.cronExecutingUser) {
         this.note.config.cronExecutingUser = this.ticketService.ticket.principal;
@@ -184,11 +197,12 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
     });
   }
 
-  exportNote() {
+  async exportNote() {
     if (!this.ticketService.configuration) {
       throw new Error('Configuration is not loaded');
     }
-    const sizeLimit = +this.ticketService.configuration['zeppelin.websocket.max.text.message.size'];
+
+    const sizeLimit = await this.configurationService.fetchWsMaxMessageSize();
     const jsonContent = JSON.stringify(this.note);
     if (jsonContent.length > sizeLimit) {
       this.nzModalService.confirm({
@@ -218,7 +232,37 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
   }
 
   searchCode() {
-    // TODO(hsuanxyz)
+    this.handleSearch.emit(this.searchText);
+  }
+
+  onSearchMenuOpenChange(open: boolean) {
+    if (open) {
+      setTimeout(() => {
+        this.searchInputRef?.nativeElement?.focus();
+      }, 0);
+    } else {
+      this.searchText = '';
+      this.searchCode();
+    }
+  }
+
+  // TODO: Implement logic to find the previous search match in the notebook editor
+  onFindPrevClick(_searchText: string) {}
+
+  // TODO: Implement logic to find the next search match in the notebook editor
+  onFindNextClick(_searchText: string) {}
+
+  // TODO: Implement logic to replace the current search match with the replacement text
+  onReplaceClick(_searchText: string, _replaceText: string) {}
+
+  // TODO: Implement logic to replace all search matches with the replacement text
+  onReplaceAllClick(searchText: string, _replaceText: string) {
+    this.handleSearch.emit(searchText);
+  }
+
+  openSearchMenu() {
+    this.isSearchMenuVisible = true;
+    this.cdr.markForCheck();
   }
 
   deleteNote() {
@@ -227,6 +271,7 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
 
   moveNoteToTrash() {
     this.messageService.moveNoteToTrash(this.note.id);
+    this.router.navigate(['/']);
   }
 
   get isTrash() {
@@ -242,7 +287,11 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
   }
 
   showShortCut() {
-    // TODO(hsuanxyz)
+    this.nzModalService.info({
+      nzTitle: `Shortcut Info`,
+      nzWidth: '600px',
+      nzContent: ShortcutComponent
+    });
   }
 
   togglePermissions() {
@@ -286,14 +335,15 @@ export class NotebookActionBarComponent extends MessageListenersManager implemen
 
   constructor(
     public messageService: MessageService,
+    @Inject(TRASH_FOLDER_ID_TOKEN) public TRASH_FOLDER_ID: string,
     private nzModalService: NzModalService,
     private ticketService: TicketService,
+    private configurationService: ConfigurationService,
     private nzMessageService: NzMessageService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private noteStatusService: NoteStatusService,
     private notebookService: NotebookService,
-    @Inject(TRASH_FOLDER_ID_TOKEN) public TRASH_FOLDER_ID: string,
     private activatedRoute: ActivatedRoute,
     private saveAsService: SaveAsService
   ) {

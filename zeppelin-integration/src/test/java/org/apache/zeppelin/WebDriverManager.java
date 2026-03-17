@@ -30,10 +30,12 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.firefox.FirefoxProfile;
@@ -45,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // This class auto discovery the available WebDriver in the following priority:
-//   Chrome, Firefox, Safari.
+//   Chrome, Edge, Firefox, Safari.
 //
 // You can also use the environment variable ZEPPELIN_SELENIUM_BROWSER to choose a specific one.
 // For example, unlike Chromium and Firefox drivers, Safari's WebDriver is pre-installed on macOS,
@@ -83,11 +85,25 @@ public class WebDriverManager implements Closeable {
     Supplier<WebDriver> chromeDriverSupplier = () -> {
       try {
         ChromeOptions options = new ChromeOptions();
+        options.addArguments("--disable-search-engine-choice-screen");
+        options.setExperimentalOption("prefs", Map.of(
+            "credentials_enable_service", false,
+            "profile.password_manager_enabled", false,
+            "profile.password_manager_leak_detection", false
+        ));
         return new ChromeDriver(options);
       } catch (Exception e) {
         LOG.error("Exception in WebDriverManager while ChromeDriver ", e);
         return null;
       }
+    };
+    Supplier<WebDriver> edgeDriverSupplier = () -> {
+      try {
+        return new EdgeDriver();
+      } catch (Exception e) {
+        LOG.error("Exception in WebDriverManager while EdgeDriver ", e);
+        return null;
+        }
     };
     Supplier<WebDriver> firefoxDriverSupplier = () -> {
       try {
@@ -111,6 +127,9 @@ public class WebDriverManager implements Closeable {
       case "chrome":
         driver = chromeDriverSupplier.get();
         break;
+      case "edge":
+        driver = edgeDriverSupplier.get();
+        break;
       case "firefox":
         driver = firefoxDriverSupplier.get();
         break;
@@ -118,7 +137,7 @@ public class WebDriverManager implements Closeable {
         driver = safariDriverSupplier.get();
         break;
       default:
-        driver = Stream.of(chromeDriverSupplier, firefoxDriverSupplier, safariDriverSupplier)
+        driver = Stream.of(chromeDriverSupplier, edgeDriverSupplier, firefoxDriverSupplier, safariDriverSupplier)
             .map(Supplier::get)
             .filter(Objects::nonNull)
             .findFirst()
@@ -157,7 +176,8 @@ public class WebDriverManager implements Closeable {
     assertTrue(loaded);
 
     try {
-      driver.manage().window().maximize();
+      // Manually setting fixed window size since `maximize()` crashes for Chrome/Edge driver on linux with xvfb.
+      driver.manage().window().setSize(new Dimension(1920, 1080));
     } catch (Exception e) {
       LOG.warn("Failed to maximize browser window. Consider using setSize() instead.", e);
     }

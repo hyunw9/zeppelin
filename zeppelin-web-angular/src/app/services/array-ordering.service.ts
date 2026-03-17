@@ -11,8 +11,7 @@
  */
 
 import { Inject, Injectable } from '@angular/core';
-import { TRASH_FOLDER_ID_TOKEN } from '@zeppelin/interfaces';
-import { NodeItem } from '@zeppelin/interfaces/node-list';
+import { NodeItem, TRASH_FOLDER_ID_TOKEN } from '@zeppelin/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +26,7 @@ export class ArrayOrderingService {
 
   getNoteName(note: NodeItem) {
     if (note.title.trim() === '') {
-      return 'Note ' + note.id;
+      return `Note ${note.id}`;
     } else {
       return note.title;
     }

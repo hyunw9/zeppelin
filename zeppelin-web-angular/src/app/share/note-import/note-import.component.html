@@ -28,7 +28,7 @@
       <p class="ant-upload-text">Click or drag JSON file to this area to upload</p>
       <p class="ant-upload-hint">
         JSON file size cannot exceed
-        <strong class="tips warning">{{ maxLimit | humanizeBytes }}</strong>
+        <strong class="tips warning">{{ wsMaxLimit | humanizeBytes }}</strong>
       </p>
     </nz-upload>
   </nz-tab>
@@ -42,13 +42,7 @@
       </nz-form-item>
       <nz-form-item>
         <nz-form-control>
-          <button
-            nz-button
-            nzType="primary"
-            (click)="importNote()"
-            [disabled]="control.status === 'error'"
-            [nzLoading]="importLoading"
-          >
+          <button nz-button nzType="primary" (click)="importNote()" [disabled]="!importUrl" [nzLoading]="importLoading">
             Import Note
           </button>
         </nz-form-control>

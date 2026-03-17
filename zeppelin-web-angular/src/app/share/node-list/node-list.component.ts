@@ -11,15 +11,14 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, Input, OnInit } from '@angular/core';
-import { TRASH_FOLDER_ID_TOKEN } from '@zeppelin/interfaces';
-import { NodeItem } from '@zeppelin/interfaces/node-list';
+import { NodeItem, TRASH_FOLDER_ID_TOKEN } from '@zeppelin/interfaces';
 
-import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzTreeNode, NzTreeNodeOptions } from 'ng-zorro-antd/tree';
 
 import { MessageListener, MessageListenersManager } from '@zeppelin/core';
 import { MessageReceiveDataTypeMap, OP } from '@zeppelin/sdk';
-import { MessageService, NoteActionService, NoteListService } from '@zeppelin/services';
+import { MessageService, NoteListService } from '@zeppelin/services';
+import { NoteActionService } from './note-action.service';
 
 @Component({
   selector: 'zeppelin-node-list',
@@ -30,7 +29,7 @@ import { MessageService, NoteActionService, NoteListService } from '@zeppelin/se
 })
 export class NodeListComponent extends MessageListenersManager implements OnInit {
   @Input() headerMode = false;
-  searchValue?: string;
+  searchValue = '';
   nodes: NzTreeNodeOptions[] = [];
   activatedId?: string;
 
@@ -100,15 +99,13 @@ export class NodeListComponent extends MessageListenersManager implements OnInit
     this.noteListService.setNotes(data.notes);
     this.nodes = this.noteListService.notes.root.children
       .sort((v1, v2) => this.noteComparator(v1, v2))
-      .map(item => {
-        return { ...item, key: item.id };
-      });
+      .map(item => ({ ...item, key: item.id }));
     this.cdr.markForCheck();
   }
 
   getNoteName(note: NodeItem) {
     if (note.title === undefined || note.title.trim() === '') {
-      return 'Note ' + note.id;
+      return `Note ${note.id}`;
     } else {
       return note.title;
     }
@@ -135,10 +132,9 @@ export class NodeListComponent extends MessageListenersManager implements OnInit
   }
 
   constructor(
-    private noteListService: NoteListService,
     public messageService: MessageService,
     @Inject(TRASH_FOLDER_ID_TOKEN) public TRASH_FOLDER_ID: string,
-    private nzModalService: NzModalService,
+    private noteListService: NoteListService,
     private noteActionService: NoteActionService,
     private cdr: ChangeDetectorRef
   ) {

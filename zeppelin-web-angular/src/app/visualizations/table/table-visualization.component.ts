@@ -13,7 +13,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Inject, OnInit, ViewChild } from '@angular/core';
 
 import { filter, maxBy, minBy, orderBy, sumBy } from 'lodash';
-import { NzTableComponent } from 'ng-zorro-antd/table';
+import { NzTableComponent, NzTableSortOrder } from 'ng-zorro-antd/table';
 import { utils, writeFile, WorkSheet } from 'xlsx';
 
 import { TableData, Visualization, VISUALIZATION } from '@zeppelin/visualization';
@@ -53,13 +53,14 @@ function typeCoercion(value: string, type: ColType): string | number | Date {
 })
 export class TableVisualizationComponent implements OnInit {
   tableData?: TableData;
-  // tslint:disable-next-line:no-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rows: any[] = [];
   columns: string[] = [];
   colOptions = new Map<string, FilterOption>();
   types: ColType[] = ['string', 'number', 'date'];
   aggregations: AggregationType[] = ['count', 'sum', 'min', 'max', 'avg'];
-  @ViewChild(NzTableComponent, { static: false }) nzTable!: NzTableComponent;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  @ViewChild(NzTableComponent, { static: false }) nzTable!: NzTableComponent<any>;
 
   exportFile(type: 'csv' | 'xlsx', all = true) {
     const wb = utils.book_new();
@@ -67,27 +68,20 @@ export class TableVisualizationComponent implements OnInit {
     if (all) {
       ws = utils.json_to_sheet(this.rows);
     } else {
-      ws = utils.json_to_sheet(this.nzTable.data);
+      ws = utils.json_to_sheet([...this.nzTable.data]);
     }
     utils.book_append_sheet(wb, ws, 'Sheet1');
     writeFile(wb, `export.${type}`);
   }
 
   onChangeType(type: ColType, col: string) {
-    const opt = this.colOptions.get(col);
-    if (!opt) {
-      throw new Error('opt is not found');
-    }
-    opt.type = type;
+    this.getColOptionOrThrow(col).type = type;
     this.filterRows();
     this.aggregate();
   }
 
   onChangeAggregation(aggregation: AggregationType, col: string) {
-    const opt = this.colOptions.get(col);
-    if (!opt) {
-      throw new Error('opt is not found');
-    }
+    const opt = this.getColOptionOrThrow(col);
     opt.aggregation = opt.aggregation === aggregation ? null : aggregation;
     this.aggregate();
   }
@@ -96,19 +90,28 @@ export class TableVisualizationComponent implements OnInit {
     this.filterRows();
   }
 
-  onSortChange(type: 'descend' | 'ascend' | string, key: string): void {
-    const opt = this.colOptions.get(key);
-    if (!opt) {
-      throw new Error('opt is not found');
-    }
-    this.colOptions.delete(key);
+  onSortChange(col: string, type: NzTableSortOrder): void {
+    const opt = this.getColOptionOrThrow(col);
+    this.colOptions.delete(col);
     if (type) {
       opt.sort = type === 'descend' ? 'desc' : 'asc';
     } else {
       opt.sort = '';
     }
-    this.colOptions.set(key, opt);
+    this.colOptions.set(col, opt);
     this.filterRows();
+  }
+
+  onTermChange(col: string, term: string) {
+    this.getColOptionOrThrow(col).term = term;
+  }
+
+  getColOptionOrThrow(col: string): FilterOption {
+    const opt = this.colOptions.get(col);
+    if (!opt) {
+      throw new Error('Column option should have been initialized');
+    }
+    return opt;
   }
 
   aggregate() {
@@ -117,7 +120,7 @@ export class TableVisualizationComponent implements OnInit {
     }
     const tableData = this.tableData;
     this.colOptions.forEach((opt, key) => {
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const numValue = (row: any) => {
         const value = typeCoercion(row[key], opt.type);
         if (typeof value === 'number') {
@@ -160,19 +163,19 @@ export class TableVisualizationComponent implements OnInit {
     if (!this.tableData) {
       throw new Error('tableData is not defined');
     }
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sortKeys: any[] = [];
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sortTypes: any[] = [];
-    // tslint:disable-next-line:no-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const terms: any[] = [];
     this.colOptions.forEach((value, key) => {
       if (value.sort) {
-        // tslint:disable-next-line:no-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         sortKeys.push((row: any) => typeCoercion(row[key], value.type));
         sortTypes.push(value.sort);
       }
-      // tslint:disable-next-line:no-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       terms.push((row: any) => String(row[key]).search(value.term) !== -1);
     });
     this.rows = filter(this.tableData.rows, row => terms.every(term => term(row)));
@@ -180,7 +183,10 @@ export class TableVisualizationComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  constructor(@Inject(VISUALIZATION) public visualization: Visualization, private cdr: ChangeDetectorRef) {}
+  constructor(
+    @Inject(VISUALIZATION) public visualization: Visualization,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {}
 

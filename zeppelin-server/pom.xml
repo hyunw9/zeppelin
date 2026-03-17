@@ -33,12 +33,12 @@
   <properties>
 
     <!--library versions-->
-    <jersey.version>3.1.9</jersey.version>
+    <jersey.version>3.1.10</jersey.version>
     <jersey.servlet.version>1.13</jersey.servlet.version>
     <javax.ws.rsapi.version>2.1</javax.ws.rsapi.version>
     <libpam4j.version>1.11</libpam4j.version>
     <jna.version>4.1.0</jna.version>
-    <nimbus.version>9.37.2</nimbus.version>
+    <nimbus.version>9.37.4</nimbus.version>
     <kerberos.version>2.0.0-M15</kerberos.version>
 
     <!--test library versions-->

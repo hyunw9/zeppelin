@@ -11,5 +11,6 @@
  */
 
 export const environment = {
-  production: true
+  production: true,
+  reactRemoteEntryUrl: '/assets/react/remoteEntry.js'
 };

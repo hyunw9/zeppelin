@@ -10,13 +10,15 @@
  * limitations under the License.
  */
 
-import { ElementRef, OnDestroy } from '@angular/core';
+import { Component, ElementRef, OnDestroy } from '@angular/core';
 
 import * as G2 from '@antv/g2';
 
 import { GraphConfig } from '@zeppelin/sdk';
 import { Visualization } from './visualization';
 
+@Component({ template: '' })
+// eslint-disable-next-line @angular-eslint/component-class-suffix
 export abstract class G2VisualizationComponentBase implements OnDestroy {
   abstract container: ElementRef<HTMLDivElement>;
   chart?: G2.Chart | null;
@@ -39,7 +41,7 @@ export abstract class G2VisualizationComponentBase implements OnDestroy {
     this.renderAfter(this.config);
   }
 
-  renderAfter(config: GraphConfig): void {}
+  renderAfter(_config: GraphConfig): void {}
 
   getKey(): string {
     if (!this.config) {
@@ -60,7 +62,7 @@ export abstract class G2VisualizationComponentBase implements OnDestroy {
     this.chart.changeHeight(this.config.height || 400);
     setTimeout(() => {
       if (!this.chart) {
-        throw new Error('Can not refresh the chart, Please make sure on correct assignment.')
+        throw new Error('Can not refresh the chart, Please make sure on correct assignment.');
       }
       this.setScale(this.chart);
       this.chart.forceFit();
@@ -85,13 +87,13 @@ export abstract class G2VisualizationComponentBase implements OnDestroy {
         });
         this.chart.legend({
           position: 'top-right'
-          // tslint:disable-next-line
+          // eslint-disable-next-line
         } as any);
       } else {
         throw new Error(`Can't find the container, Please make sure on correct assignment.`);
       }
     }
-    return this.chart
+    return this.chart;
   }
 
   ngOnDestroy(): void {

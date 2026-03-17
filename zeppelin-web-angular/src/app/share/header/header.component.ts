@@ -19,9 +19,8 @@ import { filter, takeUntil } from 'rxjs/operators';
 
 import { MessageListener, MessageListenersManager } from '@zeppelin/core';
 import { MessageReceiveDataTypeMap, OP } from '@zeppelin/sdk';
-import { MessageService, TicketService } from '@zeppelin/services';
-import { NotebookService } from '@zeppelin/services/notebook.service';
-import { AboutZeppelinComponent } from '@zeppelin/share/about-zeppelin/about-zeppelin.component';
+import { MessageService, NotebookService, TicketService } from '@zeppelin/services';
+import { AboutZeppelinComponent } from '../about-zeppelin/about-zeppelin.component';
 
 @Component({
   selector: 'zeppelin-header',
@@ -66,8 +65,8 @@ export class HeaderComponent extends MessageListenersManager implements OnInit, 
 
   constructor(
     public ticketService: TicketService,
-    private nzModalService: NzModalService,
     public messageService: MessageService,
+    private nzModalService: NzModalService,
     private router: Router,
     private notebookService: NotebookService,
     private cdr: ChangeDetectorRef

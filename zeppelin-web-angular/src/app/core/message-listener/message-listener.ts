@@ -10,16 +10,17 @@
  * limitations under the License.
  */
 
-import { OnDestroy } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Subscriber } from 'rxjs';
 
-import { MessageReceiveDataTypeMap, ReceiveArgumentsType } from '@zeppelin/sdk';
-import { MessageService } from '@zeppelin/services';
+import { Message, MessageReceiveDataTypeMap, ReceiveArgumentsType } from '@zeppelin/sdk';
 
+@Component({ template: '' })
+// eslint-disable-next-line @angular-eslint/component-class-suffix
 export class MessageListenersManager implements OnDestroy {
   __zeppelinMessageListeners__?: Array<() => void>;
   __zeppelinMessageListeners$__: Subscriber<unknown> | null = new Subscriber();
-  constructor(public messageService: MessageService) {
+  constructor(public messageService: Message) {
     if (this.__zeppelinMessageListeners__) {
       this.__zeppelinMessageListeners__.forEach(fn => fn.apply(this));
     }
@@ -32,20 +33,25 @@ export class MessageListenersManager implements OnDestroy {
 }
 
 export function MessageListener<K extends keyof MessageReceiveDataTypeMap>(op: K) {
-  return function(
+  return function (
     target: MessageListenersManager,
     propertyKey: string,
     descriptor: TypedPropertyDescriptor<ReceiveArgumentsType<K>>
   ) {
     const oldValue = descriptor.value as ReceiveArgumentsType<K>;
 
-    const fn = function(this: MessageListenersManager) {
+    // eslint-disable-next-line no-invalid-this
+    const fn = function (this: MessageListenersManager) {
+      // eslint-disable-next-line no-invalid-this
       if (!this.__zeppelinMessageListeners$__) {
         throw new Error('__zeppelinMessageListeners$__ is not defined');
       }
+      // eslint-disable-next-line no-invalid-this
       this.__zeppelinMessageListeners$__.add(
+        // eslint-disable-next-line no-invalid-this
         this.messageService.receive(op).subscribe(data => {
           // @ts-ignore
+          // eslint-disable-next-line no-invalid-this
           oldValue.apply(this, [data]);
         })
       );

@@ -197,7 +197,7 @@ public class InterpreterSetting {
 
     public Builder setConf(ZeppelinConfiguration zConf) {
       interpreterSetting.zConf = zConf;
-      interpreterSetting.option.setConf(zConf);
+      interpreterSetting.option.setUsernameForceLowerCase(zConf.isUsernameForceLowerCase());
       return this;
     }
 
@@ -491,6 +491,9 @@ public class InterpreterSetting {
   }
 
   ManagedInterpreterGroup getInterpreterGroup(String groupId) {
+    if (groupId == null) {
+      return null;
+    }
     return interpreterGroups.get(groupId);
   }
 
@@ -661,7 +664,7 @@ public class InterpreterSetting {
 
   public InterpreterSetting setConf(ZeppelinConfiguration zConf) {
     this.zConf = zConf;
-    this.option.setConf(zConf);
+    this.option.setUsernameForceLowerCase(zConf.isUsernameForceLowerCase());
     return this;
   }
 
@@ -1016,22 +1019,36 @@ public class InterpreterSetting {
     t.start();
   }
 
-  //TODO(zjffdu) ugly code, should not use JsonObject as parameter. not readable
-  public void convertPermissionsFromUsersToOwners(JsonObject jsonObject) {
-    if (jsonObject != null) {
-      JsonObject option = jsonObject.getAsJsonObject("option");
-      if (option != null) {
-        JsonArray users = option.getAsJsonArray("users");
-        if (users != null) {
-          if (this.option.getOwners() == null) {
-            this.option.owners = new LinkedList<>();
-          }
-          for (JsonElement user : users) {
-            this.option.getOwners().add(user.getAsString());
-          }
-        }
+  public void convertPermissionsFromUsersToOwners(List<String> users) {
+    if (users != null && !users.isEmpty()) {
+      if (this.option.getOwners() == null) {
+        this.option.owners = new LinkedList<>();
       }
+      this.option.getOwners().addAll(users);
     }
+  }
+
+  private static class InterpreterSettingData {
+    private OptionData option;
+    
+    private static class OptionData {
+      private List<String> users;
+    }
+  }
+
+  public static List<String> extractUsersFromJsonString(String jsonString) {
+    if (jsonString == null || jsonString.trim().isEmpty()) {
+      return new LinkedList<>();
+    }
+    
+    Gson gson = new Gson();
+    InterpreterSettingData data = gson.fromJson(jsonString, InterpreterSettingData.class);
+    
+    if (data != null && data.option != null && data.option.users != null) {
+      return new LinkedList<>(data.option.users);
+    }
+    
+    return new LinkedList<>();
   }
 
   // For backward compatibility of interpreter.json format after ZEPPELIN-2403

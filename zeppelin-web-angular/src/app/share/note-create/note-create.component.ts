@@ -11,13 +11,12 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import { MessageService, NoteListService } from '@zeppelin/services';
 
 import { NzModalRef } from 'ng-zorro-antd/modal';
 
 import { MessageListener, MessageListenersManager } from '@zeppelin/core';
 import { InterpreterItem, MessageReceiveDataTypeMap, Note, OP } from '@zeppelin/sdk';
-import { MessageService } from '@zeppelin/services/message.service';
-import { NoteListService } from '@zeppelin/services/note-list.service';
 
 @Component({
   selector: 'zeppelin-note-create',
@@ -39,8 +38,8 @@ export class NoteCreateComponent extends MessageListenersManager implements OnIn
     this.cdr.markForCheck();
   }
 
-  @MessageListener(OP.NOTES_INFO)
-  getNotes(data: MessageReceiveDataTypeMap[OP.NOTES_INFO]) {
+  @MessageListener(OP.NEW_NOTE)
+  newNoteCreated(_: MessageReceiveDataTypeMap[OP.NEW_NOTE]) {
     this.nzModalRef.destroy();
   }
 
@@ -55,14 +54,14 @@ export class NoteCreateComponent extends MessageListenersManager implements OnIn
         }
       }
     });
-    return `${path ? path + '/' : ''}Untitled Note ${newCount}`;
+    return `${path ? `${path}/` : ''}Untitled Note ${newCount}`;
   }
 
   cloneNoteName(cloneNote: Exclude<Note['note'], undefined>) {
     let copyCount = 1;
     let newCloneName = '';
     const lastIndex = cloneNote.name.lastIndexOf(' ');
-    const endsWithNumber: boolean = !!cloneNote.name.match('^.+?\\s\\d$');
+    const endsWithNumber = !!cloneNote.name.match('^.+?\\s\\d$');
     const noteNamePrefix = endsWithNumber ? cloneNote.name.substr(0, lastIndex) : cloneNote.name;
     const regexp = new RegExp(`^${noteNamePrefix}.+`);
 
@@ -84,9 +83,11 @@ export class NoteCreateComponent extends MessageListenersManager implements OnIn
   }
 
   createNote() {
-    this.cloneNote
-      ? this.messageService.cloneNote(this.cloneNote.id, this.noteName)
-      : this.messageService.newNote(this.noteName, this.defaultInterpreter);
+    if (this.cloneNote) {
+      this.messageService.cloneNote(this.cloneNote.id, this.noteName);
+    } else {
+      this.messageService.newNote(this.noteName, this.defaultInterpreter);
+    }
   }
 
   constructor(

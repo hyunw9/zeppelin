@@ -19,6 +19,7 @@ import {
   QueryList,
   ViewChildren
 } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isNil } from 'lodash';
 import { Subject } from 'rxjs';
@@ -42,10 +43,11 @@ import {
   NoteStatusService,
   NoteVarShareService,
   SecurityService,
+  ThemeService,
   TicketService
 } from '@zeppelin/services';
 
-import { scrollIntoViewIfNeeded } from '@zeppelin/utility/element';
+import { scrollIntoViewIfNeeded } from '@zeppelin/utility';
 import { NotebookParagraphComponent } from './paragraph/paragraph.component';
 
 @Component({
@@ -103,6 +105,8 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
           }
         });
       }
+      this.titleService.setTitle(`${this.note?.name} - Zeppelin`);
+      this.themeService.updateMonacoTheme();
       this.cdr.markForCheck();
     }
   }
@@ -126,7 +130,14 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
       return;
     }
     const definedNote = this.note;
-    definedNote.paragraphs = definedNote.paragraphs.filter(p => p.id !== data.id);
+    const paragraphIndex = definedNote.paragraphs.findIndex(p => p.id === data.id);
+    definedNote.paragraphs = definedNote.paragraphs.filter((p, index) => index !== paragraphIndex);
+    const adjustedCursorIndex =
+      paragraphIndex === definedNote.paragraphs.length ? paragraphIndex - 1 : paragraphIndex + 1;
+    const targetParagraph = this.listOfNotebookParagraphComponent.find((_, index) => index === adjustedCursorIndex);
+    if (targetParagraph) {
+      targetParagraph.focusEditor();
+    }
     this.cdr.markForCheck();
   }
 
@@ -140,15 +151,11 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
       return;
     }
     const definedNote = this.note;
-    definedNote.paragraphs.splice(data.index, 0, data.paragraph).map(p => {
-      return {
-        ...p,
-        focus: p.id === data.paragraph.id
-      };
-    });
-    definedNote.paragraphs = [...definedNote.paragraphs];
+    definedNote.paragraphs.splice(data.index, 0, data.paragraph);
+    const paragraphIndex = definedNote.paragraphs.findIndex(p => p.id === data.paragraph.id);
+
+    definedNote.paragraphs[paragraphIndex].focus = true;
     this.cdr.markForCheck();
-    // TODO(hsuanxyz) focus on paragraph
   }
 
   @MessageListener(OP.SAVE_NOTE_FORMS)
@@ -175,7 +182,7 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
   }
 
   @MessageListener(OP.SET_NOTE_REVISION)
-  setNoteRevision(data: MessageReceiveDataTypeMap[OP.SET_NOTE_REVISION]) {
+  setNoteRevision(_data: MessageReceiveDataTypeMap[OP.SET_NOTE_REVISION]) {
     const { noteId } = this.activatedRoute.snapshot.params;
     this.router.navigate(['/notebook', noteId]).then();
   }
@@ -196,6 +203,7 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
           // Call when next tick
           setTimeout(() => {
             scrollIntoViewIfNeeded(paragraphComponent.getElement());
+            paragraphComponent.focusEditor();
           });
         }
       }
@@ -210,7 +218,7 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
   }
 
   @MessageListener(OP.PATCH_PARAGRAPH)
-  patchParagraph(data: MessageReceiveDataTypeMap[OP.PATCH_PARAGRAPH]) {
+  patchParagraph(_data: MessageReceiveDataTypeMap[OP.PATCH_PARAGRAPH]) {
     this.collaborativeMode = true;
     this.cdr.markForCheck();
   }
@@ -248,6 +256,10 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
       }
     }
     this.cdr.markForCheck();
+  }
+
+  onParagraphSearch(term: string) {
+    this.listOfNotebookParagraphComponent.forEach(comp => comp.highlightMatches(term || ''));
   }
 
   saveParagraph(id: string) {
@@ -393,15 +405,17 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
   }
 
   constructor(
-    private activatedRoute: ActivatedRoute,
     public messageService: MessageService,
+    protected ngZService: NgZService,
+    private activatedRoute: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private noteStatusService: NoteStatusService,
     private noteVarShareService: NoteVarShareService,
     private ticketService: TicketService,
     private securityService: SecurityService,
     private router: Router,
-    protected ngZService: NgZService
+    private titleService: Title,
+    private themeService: ThemeService
   ) {
     super(messageService);
   }
@@ -449,5 +463,6 @@ export class NotebookComponent extends MessageListenersManager implements OnInit
     this.saveNote();
     this.destroy$.next();
     this.destroy$.complete();
+    this.titleService.setTitle('Zeppelin');
   }
 }

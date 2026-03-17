@@ -10,15 +10,16 @@
  * limitations under the License.
  */
 
-import { ComponentRef } from '@angular/core';
+import { CdkPortalOutlet } from '@angular/cdk/portal';
+import { ComponentRef, ViewContainerRef } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import { GraphConfig } from '@zeppelin/sdk';
 import { Transformation } from './transformation';
 
-// tslint:disable-next-line
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export abstract class Visualization<T = any> {
-  // tslint:disable-next-line
+  // eslint-disable-next-line
   transformed: any;
   componentRef: ComponentRef<T> | null = null;
   configChange$: Subject<GraphConfig> | null = new Subject<GraphConfig>();
@@ -45,3 +46,10 @@ export abstract class Visualization<T = any> {
     return this.config;
   }
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type VisualizationConstructor<T = any> = new (
+  portalOutlet: CdkPortalOutlet,
+  viewContainerRef: ViewContainerRef,
+  config: GraphConfig
+) => Visualization<T>;
