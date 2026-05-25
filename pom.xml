@@ -56,7 +56,6 @@
     <module>zeppelin-interpreter-parent</module>
     <module>zeppelin-interpreter</module>
     <module>zeppelin-interpreter-shaded</module>
-    <module>zeppelin-zengine</module>
     <module>rlang</module>
     <module>zeppelin-jupyter-interpreter</module>
     <module>zeppelin-jupyter-interpreter-shaded</module>
@@ -78,7 +77,6 @@
     <module>cassandra</module>
     <module>elasticsearch</module>
     <module>bigquery</module>
-    <module>alluxio</module>
     <module>neo4j</module>
     <module>java</module>
     <module>sparql</module>

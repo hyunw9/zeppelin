@@ -33,7 +33,7 @@ permissions:
   contents: read # to fetch code (actions/checkout)
 
 jobs:
-  # test on core-modules (zeppelin-interpreter,zeppelin-zengine,zeppelin-server),
+  # test on core-modules (zeppelin-interpreter,zeppelin-server),
   # some interpreters are included, because zeppelin-server test depends on them: spark, shell & markdown
   core-modules:
     runs-on: ubuntu-24.04
@@ -75,7 +75,7 @@ jobs:
           python-version: 3.9
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: Make IRkernel available to Jupyter
         run: |
@@ -93,7 +93,7 @@ jobs:
       matrix:
         java: [ 11 ]
     env:
-      INTERPRETERS: 'hbase,jdbc,file,flink-cmd,cassandra,elasticsearch,bigquery,alluxio,livy,groovy,java,neo4j,sparql,mongodb,influxdb,shell'
+      INTERPRETERS: 'hbase,jdbc,file,flink-cmd,cassandra,elasticsearch,bigquery,livy,groovy,java,neo4j,sparql,mongodb,influxdb,shell'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -125,7 +125,7 @@ jobs:
           python-version: 3.9
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: verify interpreter
         run: ./mvnw verify -am -pl ${INTERPRETERS} ${MAVEN_ARGS}
@@ -167,7 +167,7 @@ jobs:
           python-version: ${{ matrix.python }}
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: Make IRkernel available to Jupyter
         run: |
@@ -222,7 +222,7 @@ jobs:
           python-version: 3.9
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: Make IRkernel available to Jupyter
         run: |
@@ -278,7 +278,7 @@ jobs:
           python-version: ${{ matrix.python }}
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: run tests for flink
         run: ./mvnw verify -pl flink/flink-scala-2.12,flink-cmd,zeppelin-interpreter-integration -Pflink-${{ matrix.flink }} -am -Pintegration -DfailIfNoTests=false -Dtest=org.apache.zeppelin.flink.*Test,FlinkIntegrationTest${{ matrix.flink }} ${MAVEN_ARGS}
@@ -326,7 +326,7 @@ jobs:
           python-version: 3.9
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: Make IRkernel available to Jupyter
         run: |
@@ -373,7 +373,7 @@ jobs:
           python-version: ${{ matrix.python }}
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: Make IRkernel available to Jupyter
         run: |
@@ -442,7 +442,7 @@ jobs:
           python-version: 3.9
           channels: conda-forge,defaults
           channel-priority: strict
-          auto-activate-base: false
+          auto-activate: false
           use-mamba: true
       - name: Make IRkernel available to Jupyter
         run: |
